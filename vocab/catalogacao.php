@@ -10,21 +10,19 @@ $metadata = do_meta_tag();
 //include_once('formulario/config.ws.php');
 //include_once('formulario/common/vocabularyservices.php');
 
-$URL_BASE = 'http://localhost/tematres/vocab/services.php';
+$URL_BASE = 'https://vocabulario.abcd.usp.br/novo/vocab/services.php';
 
 function getURLdata($url)
 {
 
-    if (extension_loaded('curl')) {
-        $rCURL = curl_init();
-        curl_setopt($rCURL, CURLOPT_URL, $url);
-        curl_setopt($rCURL, CURLOPT_HEADER, 0);
-        curl_setopt($rCURL, CURLOPT_RETURNTRANSFER, 1);
-        $xml = curl_exec($rCURL);
-        curl_close($rCURL);
-    } else {
-        $xml = file_get_contents($url) or die("Could not open a feed called: " . $url);
-    }
+    $arrContextOptions = array(
+        "ssl" => array(
+            "verify_peer" => false,
+            "verify_peer_name" => false,
+        ),
+    );
+    $xml = file_get_contents($url, false, stream_context_create($arrContextOptions)) or die("Could not open a feed called: " . $url);
+
 
     $content = new SimpleXMLElement($xml);
 
@@ -78,38 +76,38 @@ function HTMLdoSelect($URL_BASE, $term_id)
     echo '<script type="text/javascript" src="' . T3_WEBPATH . 'jq/chartist-js/chartist-plugin-axistitle.min.js"></script>';
     ?>
     <style>
-        #ct-deep {
-            height: 300px;
-            width: 100%;
-        }
+    #ct-deep {
+        height: 300px;
+        width: 100%;
+    }
 
-        #ct-lexical {
-            height: 400px;
-            width: 100%;
+    #ct-lexical {
+        height: 400px;
+        width: 100%;
 
-        }
+    }
 
-        #ct-logic {
-            height: 400px;
-            width: 100%;
-        }
+    #ct-logic {
+        height: 400px;
+        width: 100%;
+    }
 
-        .ct-label {
-            fill: rgba(0, 0, 0, .8);
-            color: rgba(0, 0, 0, .8);
-            font-size: 1em;
-            line-height: 2;
-        }
+    .ct-label {
+        fill: rgba(0, 0, 0, .8);
+        color: rgba(0, 0, 0, .8);
+        font-size: 1em;
+        line-height: 2;
+    }
     </style>
 
     <!-- Script para criar o pop-up do popterms -->
     <script>
-        function creaPopup(url) {
-            tesauro = window.open(url,
-                "Tesauro",
-                "directories=no, menubar=no,status=no,toolbar=no,location=no,scrollbars=yes,fullscreen=no,height=600,width=450,left=500,top=0"
-            )
-        }
+    function creaPopup(url) {
+        tesauro = window.open(url,
+            "Tesauro",
+            "directories=no, menubar=no,status=no,toolbar=no,location=no,scrollbars=yes,fullscreen=no,height=600,width=450,left=500,top=0"
+        )
+    }
     </script>
 
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -126,28 +124,30 @@ function HTMLdoSelect($URL_BASE, $term_id)
 
 
                 <div class="form-group">
-                    <a href="#" data-popterms-server="http://localhost/tematres/a/popterms/" data-popterms-vocabulary="VCUSP" data-popterms-target="#vcusp">Consultar o VCUSP</a>
+                    <a href="#" data-popterms-server="https://vocabulario.abcd.usp.br/novo/a/popterms/"
+                        data-popterms-vocabulary="VCUSP" data-popterms-target="#vcusp">Consultar o VCUSP</a>
                     <br>
-                    <input class="form-control" id="vcusp" type="text" size="100" v-model="TERMO" placeholder="Selecione um termo consultando o VCUSP">
+                    <input class="form-control" id="vcusp" type="text" size="100" v-model="TERMO"
+                        placeholder="Selecione um termo consultando o VCUSP">
                 </div>
 
                 <div class="form-group">
                     <label class="sr-only" for="qualificador">Qualificador</label>
-                    <?php echo HTMLdoSelect($URL_BASE, 5); ?>
+                    <?php echo HTMLdoSelect($URL_BASE, 140064); ?>
                 </div>
 
                 <div class="form-group">
                     <label class="sr-only" for="genero">Gênero e Forma</label>
-                    <?php echo HTMLdoSelect($URL_BASE, 11); ?>
+                    <?php echo HTMLdoSelect($URL_BASE, 101829); ?>
                 </div>
 
                 <div class="form-group">
                     <label class="sr-only" for="profissoes">Profissões e ocupações</label>
-                    <?php echo HTMLdoSelect($URL_BASE, 26); ?>
+                    <?php echo HTMLdoSelect($URL_BASE, 136770); ?>
                 </div>
 
                 <div class="form-group">
-                    <?php echo HTMLdoSelect($URL_BASE, 18); ?>
+                    <?php echo HTMLdoSelect($URL_BASE, 102243); ?>
                     <label class="sr-only" for="geografico">Geográfico</label>
                 </div>
 
@@ -181,7 +181,8 @@ function HTMLdoSelect($URL_BASE, $term_id)
                 <div class="row">
                     <a href="https://www.vocabularyserver.com/" title="TemaTres: vocabulary server" target="_blank">
                         <img src="<?php echo T3_WEBPATH; ?>/images/tematres-logo.gif" width="42" alt="TemaTres" /></a>
-                    <a href="https://www.vocabularyserver.com/" title="TemaTres: vocabulary server" target="_blank">TemaTres</a>
+                    <a href="https://www.vocabularyserver.com/" title="TemaTres: vocabulary server"
+                        target="_blank">TemaTres</a>
                     <p class="navbar-text pull-left">
                         <?php
                         //are enable SPARQL
@@ -206,71 +207,71 @@ function HTMLdoSelect($URL_BASE, $term_id)
 
 
         <script>
-            // Vue app
-            const app = Vue.createApp({
-                data() {
-                    return {
-                        TERMO: '',
-                        TERMO_A: '',
-                        QUALIFICADORES: '',
-                        QUALIFICADORES_A: '',
-                        PROFISSÕES: '',
-                        PROFISSÕES_A: '',
-                        GÊNEROEFORMA: '',
-                        GÊNEROEFORMA_A: '',
-                        GEOGRÁFICO: '',
-                        GEOGRÁFICO_A: '',
-                        DATA: '',
-                        DATA_A: '',
-                        result: ''
-                    };
-                },
-                methods: {
-                    concatAll() {
-                        if (this.TERMO.trim() !== "") {
-                            this.TERMO_A = '$a' + this.TERMO;
-                        }
-                        if (this.QUALIFICADORES.trim() !== "") {
-                            this.QUALIFICADORES_A = '$j' + this.QUALIFICADORES;
-                        }
-                        if (this.PROFISSÕES.trim() !== "") {
-                            this.PROFISSÕES_A = '$x' + this.PROFISSÕES;
-                        }
-                        if (this.GÊNEROEFORMA.trim() !== "") {
-                            this.GÊNEROEFORMA_A = '$v' + this.GÊNEROEFORMA;
-                        }
-                        if (this.GEOGRÁFICO.trim() !== "") {
-                            this.GEOGRÁFICO_A = '$z' + this.GEOGRÁFICO;
-                        }
-                        if (this.DATA.trim() !== "") {
-                            this.DATA_A = '$d' + this.DATA;
-                        }
-                        // Convert values to numbers and add them
-                        this.result = this.TERMO_A.trim() + this.QUALIFICADORES_A.trim() + this.PROFISSÕES_A
-                            .trim() +
-                            this.GÊNEROEFORMA_A.trim() + this.GEOGRÁFICO_A.trim() + this.DATA_A.trim() +
-                            '$2larpcal';
-                    },
-                    clear() {
-                        this.TERMO = '';
-                        this.TERMO_A = '';
-                        this.QUALIFICADORES = '';
-                        this.QUALIFICADORES_A = '';
-                        this.PROFISSÕES = '';
-                        this.PROFISSÕES_A = '';
-                        this.GÊNEROEFORMA = '';
-                        this.GÊNEROEFORMA_A = '';
-                        this.GEOGRÁFICO = '';
-                        this.GEOGRÁFICO_A = '';
-                        this.DATA = '';
-                        this.DATA_A = '';
-                        this.result = '';
+        // Vue app
+        const app = Vue.createApp({
+            data() {
+                return {
+                    TERMO: '',
+                    TERMO_A: '',
+                    QUALIFICADORES: '',
+                    QUALIFICADORES_A: '',
+                    PROFISSÕES: '',
+                    PROFISSÕES_A: '',
+                    GÊNEROEFORMA: '',
+                    GÊNEROEFORMA_A: '',
+                    GEOGRÁFICO: '',
+                    GEOGRÁFICO_A: '',
+                    DATA: '',
+                    DATA_A: '',
+                    result: ''
+                };
+            },
+            methods: {
+                concatAll() {
+                    if (this.TERMO.trim() !== "") {
+                        this.TERMO_A = '$a' + this.TERMO;
                     }
+                    if (this.QUALIFICADORES.trim() !== "") {
+                        this.QUALIFICADORES_A = '$j' + this.QUALIFICADORES;
+                    }
+                    if (this.PROFISSÕES.trim() !== "") {
+                        this.PROFISSÕES_A = '$x' + this.PROFISSÕES;
+                    }
+                    if (this.GÊNEROEFORMA.trim() !== "") {
+                        this.GÊNEROEFORMA_A = '$v' + this.GÊNEROEFORMA;
+                    }
+                    if (this.GEOGRÁFICO.trim() !== "") {
+                        this.GEOGRÁFICO_A = '$z' + this.GEOGRÁFICO;
+                    }
+                    if (this.DATA.trim() !== "") {
+                        this.DATA_A = '$d' + this.DATA;
+                    }
+                    // Convert values to numbers and add them
+                    this.result = this.TERMO_A.trim() + this.QUALIFICADORES_A.trim() + this.PROFISSÕES_A
+                        .trim() +
+                        this.GÊNEROEFORMA_A.trim() + this.GEOGRÁFICO_A.trim() + this.DATA_A.trim() +
+                        '$2larpcal';
+                },
+                clear() {
+                    this.TERMO = '';
+                    this.TERMO_A = '';
+                    this.QUALIFICADORES = '';
+                    this.QUALIFICADORES_A = '';
+                    this.PROFISSÕES = '';
+                    this.PROFISSÕES_A = '';
+                    this.GÊNEROEFORMA = '';
+                    this.GÊNEROEFORMA_A = '';
+                    this.GEOGRÁFICO = '';
+                    this.GEOGRÁFICO_A = '';
+                    this.DATA = '';
+                    this.DATA_A = '';
+                    this.result = '';
                 }
-            });
+            }
+        });
 
-            // Mount the app to the #app div
-            app.mount('#app');
+        // Mount the app to the #app div
+        app.mount('#app');
         </script>
 
         <!-- jQuery -->

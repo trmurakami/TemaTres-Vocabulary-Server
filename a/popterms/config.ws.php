@@ -25,7 +25,7 @@ CONFIGURATION
 */
 session_start();
 // Base URL
-$URL_BASE = 'http://localhost/tematres/vocab/services.php';
+$URL_BASE = 'https://vocabulario.abcd.usp.br/novo/vocab/services.php';
 
 // Configuration array
 $CFG = array();
@@ -44,7 +44,7 @@ date_default_timezone_set('America/Buenos_Aires');
 
 /*Servers configuration*/
 $CFG_VOCABS[1]["ALIAS"] = "VCUSP";
-$CFG_VOCABS[1]["URL_BASE"] = "http://localhost/tematres/vocab/services.php";
+$CFG_VOCABS[1]["URL_BASE"] = "https://vocabulario.abcd.usp.br/novo/vocab/services.php";
 $CFG_VOCABS[1]["ALPHA"] = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
 
 

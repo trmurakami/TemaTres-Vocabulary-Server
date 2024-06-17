@@ -32,26 +32,19 @@ Hacer una consulta y devolver un array
 * +    & task = consulta a realizar
 * +    & arg = argumentos de la consulta
 */
-function getURLdata($url) {
+function getURLdata($url)
+{
 	global $CURL_PROXY, $CURL_PROXY_PORT;
 
-	if (extension_loaded('curl')) {
-		$rCURL = curl_init();
-		curl_setopt($rCURL, CURLOPT_URL, $url);
-		if(isset($CURL_PROXY)) {
-			curl_setopt($rCURL, CURLOPT_PROXY, $CURL_PROXY);
-		}
-		if(isset($CURL_PROXYPORT)) {
-			curl_setopt($rCURL, CURLOPT_PROXYPORT, $CURL_PROXY_PORT);
-		}
-		curl_setopt($rCURL, CURLOPT_HEADER, 0);
-		curl_setopt($rCURL, CURLOPT_RETURNTRANSFER, 1);
-		$xml = curl_exec($rCURL) or die ("Could not open a feed called: " . $url);
-		curl_close($rCURL);
 
-	} else {
-		$xml = file_get_contents($url) or die ("Could not open a feed called: " . $url);
-	}
+	$arrContextOptions = array(
+		"ssl" => array(
+			"verify_peer" => false,
+			"verify_peer_name" => false,
+		),
+	);
+	$xml = file_get_contents($url, false, stream_context_create($arrContextOptions)) or die("Could not open a feed called: " . $url);
+
 	$content = new SimpleXMLElement($xml);
 	return $content;
 }
@@ -64,60 +57,58 @@ function getURLdata($url) {
  */
 
 /*  Recibe un objeto con las notas y lo publica como HTML  */
-function data2html4Notes($data,$param=array())
+function data2html4Notes($data, $param = array())
 {
-    GLOBAL $CFG;
-    $rows = '';
-    if ($data->resume->cant_result > 0) {
-        $i = 0;
-        $rows.='<div class="well well-small" id="notabnm">';
-        $i=0;
-            foreach ($data->result->term as $value) :
-                $i=++$i;
+	global $CFG;
+	$rows = '';
+	if ($data->resume->cant_result > 0) {
+		$i = 0;
+		$rows .= '<div class="well well-small" id="notabnm">';
+		$i = 0;
+		foreach ($data->result->term as $value) :
+			$i = ++$i;
 
-                    $note_type=(string) $value->note_type;
-                    //note_label is one of the standard type of note
-                    $note_label=(in_array($note_type,array("NA","NH","NB","NP","NC","CB"))) ? str_replace(array("NA","NH","NB","NP","NC"),array(LABEL_NA,LABEL_NH,LABEL_NB,LABEL_NC),$note_type) : $note_type;
+			$note_type = (string) $value->note_type;
+			//note_label is one of the standard type of note
+			$note_label = (in_array($note_type, array("NA", "NH", "NB", "NP", "NC", "CB"))) ? str_replace(array("NA", "NH", "NB", "NP", "NC"), array(LABEL_NA, LABEL_NH, LABEL_NB, LABEL_NC), $note_type) : $note_type;
 
-                    //note_label is custom type of note
-                    $note_label=(isset($CFG["LOCAL_NOTES"]["$note_type"])) ? $CFG["LOCAL_NOTES"]["$note_type"] : $note_type;
-                    $rows.='<div rel="skos:scopeNote">';
-                    $rows.='<span class="note_label">'.$note_label.':</span>';
-                    $rows.='<p class="note">'.(string) $value->note_text.'</p>';
-                    $rows.='</div>';
-            endforeach;
-        $rows.='</div>';
-    }
-    return $rows;
-};
-
-;
+			//note_label is custom type of note
+			$note_label = (isset($CFG["LOCAL_NOTES"]["$note_type"])) ? $CFG["LOCAL_NOTES"]["$note_type"] : $note_type;
+			$rows .= '<div rel="skos:scopeNote">';
+			$rows .= '<span class="note_label">' . $note_label . ':</span>';
+			$rows .= '<p class="note">' . (string) $value->note_text . '</p>';
+			$rows .= '</div>';
+		endforeach;
+		$rows .= '</div>';
+	}
+	return $rows;
+};;
 
 
 /*  data to letter html  */
-function data2html4Letter($data,$param=array())
+function data2html4Letter($data, $param = array())
 {
-    GLOBAL $URL_BASE;
-    $vocab_code=loadVocabularyID(@$param["vocab_code"]);
+	global $URL_BASE;
+	$vocab_code = loadVocabularyID(@$param["vocab_code"]);
 
-    $rows.='<div id="term_breadcrumb">';                    
-    $rows.='<span typeof="v:Breadcrumb">';
-    $rows.='<a rel="v:url" property="v:title" href="'.$CFG_URL_PARAM["url_site"].'index.php?v='.$vocab_code.'" title="'.MENU_Inicio.'">'.MENU_Inicio.'</a>';
-    $rows.='</span>  ';
-	$rows.='› <span typeof="v:Breadcrumb">'.$param["div_title"].'  <i>'.$data->resume->param->arg.'</i>: '.$data->resume->cant_result.'</span>  ';
-    $rows.='</div><hr>  ';            
-    if($data->resume->cant_result > 0) {
-        $rows.='<ul>';
-        foreach ($data->result->term as $value) :
-            $i=++$i;
-            //Controlar que no sea un resultado unico
-            $rows.='<li><span about="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" typeof="skos:Concept">';
-            $rows.=(strlen($value->no_term_string)>0) ? $value->no_term_string." <i>".USE_termino."</i> " : "";
-            $rows.='<a resource="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" property="skos:prefLabel" href="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" title="'.FixEncoding($value->string).'">'.FixEncoding($value->string).'</a></span></li>';
-        endforeach;
-        $rows.='</ul>';
-    }
-    return array("task"=>"letter","results"=>$rows);
+	$rows .= '<div id="term_breadcrumb">';
+	$rows .= '<span typeof="v:Breadcrumb">';
+	$rows .= '<a rel="v:url" property="v:title" href="' . $CFG_URL_PARAM["url_site"] . 'index.php?v=' . $vocab_code . '" title="' . MENU_Inicio . '">' . MENU_Inicio . '</a>';
+	$rows .= '</span>  ';
+	$rows .= '› <span typeof="v:Breadcrumb">' . $param["div_title"] . '  <i>' . $data->resume->param->arg . '</i>: ' . $data->resume->cant_result . '</span>  ';
+	$rows .= '</div><hr>  ';
+	if ($data->resume->cant_result > 0) {
+		$rows .= '<ul>';
+		foreach ($data->result->term as $value) :
+			$i = ++$i;
+			//Controlar que no sea un resultado unico
+			$rows .= '<li><span about="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" typeof="skos:Concept">';
+			$rows .= (strlen($value->no_term_string) > 0) ? $value->no_term_string . " <i>" . USE_termino . "</i> " : "";
+			$rows .= '<a resource="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" property="skos:prefLabel" href="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" title="' . FixEncoding($value->string) . '">' . FixEncoding($value->string) . '</a></span></li>';
+		endforeach;
+		$rows .= '</ul>';
+	}
+	return array("task" => "letter", "results" => $rows);
 }
 
 
@@ -127,7 +118,7 @@ data to last terms created
 function data2html4LastTerms($data, $param = array())
 {
 
-	GLOBAL $URL_BASE;
+	global $URL_BASE;
 
 
 	$rows .= '<h3>' . $param["div_title"] . '</h3>';
@@ -155,59 +146,60 @@ function data2html4LastTerms($data, $param = array())
 
 
 /*  Recibe un objeto con resultados de búsqueda y lo publica como HTML  */
-function data2html4Search($data,$string,$param=array())
+function data2html4Search($data, $string, $param = array())
 {
-    GLOBAL $message, $URL_BASE;
+	global $message, $URL_BASE;
 
-    $vocab_code=loadVocabularyID(@$param["vocab_code"]);
-    $rows=' <div>
+	$vocab_code = loadVocabularyID(@$param["vocab_code"]);
+	$rows = ' <div>
                 <h3 id="msg_search_result">
-                    '.ucfirst(MSG_ResultBusca).' <i>'.(string) $data->resume->param->arg.'</i>: '.(string) $data->resume->cant_result.'
+                    ' . ucfirst(MSG_ResultBusca) . ' <i>' . (string) $data->resume->param->arg . '</i>: ' . (string) $data->resume->cant_result . '
                 </h3>
             </div>
             <ul id="list_search_result">';
-    $i = 0;
-    if ($data->resume->cant_result > 0) {
-        foreach ($data->result->term as $value) :
-            $i=++$i;
-            $term_id        = (int) $value->term_id;
-            $term_string    = (string) $value->string;
-            $no_term_string = '';
-            $no_term_string = (string) $value->no_term_string;
-            $rows.='    <li>
-                            <span about="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" typeof="skos:Concept" >';
-            if ($no_term_string != '')
-                $rows.=         $no_term_string.' <strong>use</strong> ';
-            $rows.='            <a resource="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" property="skos:prefLabel" href="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'"  title="'.$term_string.'">
-                                    '.$term_string.'
+	$i = 0;
+	if ($data->resume->cant_result > 0) {
+		foreach ($data->result->term as $value) :
+			$i = ++$i;
+			$term_id        = (int) $value->term_id;
+			$term_string    = (string) $value->string;
+			$no_term_string = '';
+			$no_term_string = (string) $value->no_term_string;
+			$rows .= '    <li>
+                            <span about="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" typeof="skos:Concept" >';
+			if ($no_term_string != '')
+				$rows .=         $no_term_string . ' <strong>use</strong> ';
+			$rows .= '            <a resource="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" property="skos:prefLabel" href="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '"  title="' . $term_string . '">
+                                    ' . $term_string . '
                                 </a>
                             </span>
                         </li>';
-        endforeach;
-        $rows.='</ul>';
-    } else {
-        //No hay resultados, buscar términos similares
+		endforeach;
+		$rows .= '</ul>';
+	} else {
+		//No hay resultados, buscar términos similares
 
-        $data=getURLdata($URL_BASE.'?task=fetchSimilar&arg='.urlencode((string) $data->resume->param->arg));
-        if($data->resume->cant_result > 0) {
-            $rows.='<h4>'.ucfirst(LABEL_TERMINO_SUGERIDO).' <a href="'.redactHREF($vocab_code,"search",(string) $data->result->string).'" title="'.(string) $data->result->string.'">'.(string) $data->result->string.'</a>?</h4>';
-        }
-    }
-    return $rows;
+		$data = getURLdata($URL_BASE . '?task=fetchSimilar&arg=' . urlencode((string) $data->resume->param->arg));
+		if ($data->resume->cant_result > 0) {
+			$rows .= '<h4>' . ucfirst(LABEL_TERMINO_SUGERIDO) . ' <a href="' . redactHREF($vocab_code, "search", (string) $data->result->string) . '" title="' . (string) $data->result->string . '">' . (string) $data->result->string . '</a>?</h4>';
+		}
+	}
+	return $rows;
 }
 
 
 /*HTML details for one term*/
-function data2htmlTerm($data, $param = array()){
-    GLOBAL $URL_BASE, $CFG_URL_PARAM, $CFG_VOCABS ;
+function data2htmlTerm($data, $param = array())
+{
+	global $URL_BASE, $CFG_URL_PARAM, $CFG_VOCABS;
 
-    $vocab_code = loadVocabularyID(@$param["vocab_code"]);
-    $date_term  = ($data->result->term->date_mod) ? $data->result->term->date_mod : $data->result->term->date_create;
-    $date_term  = date_create($date_term);
-    $term_id    = (int) $data->result->term->tema_id;
-    $term       = (string) $data->result->term->string;
-    $class_term = ($data->result->term->isMetaTerm == 1) ? ' class="metaTerm" ' :'';
-	
+	$vocab_code = loadVocabularyID(@$param["vocab_code"]);
+	$date_term  = ($data->result->term->date_mod) ? $data->result->term->date_mod : $data->result->term->date_create;
+	$date_term  = date_create($date_term);
+	$term_id    = (int) $data->result->term->tema_id;
+	$term       = (string) $data->result->term->string;
+	$class_term = ($data->result->term->isMetaTerm == 1) ? ' class="metaTerm" ' : '';
+
 
 	$arrayRows["termdata"] .= '<span ' . $class_term . ' id="term_prefLabel" property="skos:prefLabel" content="' . FixEncoding($term) . '">' . FixEncoding($term) . '</span>';
 	$arrayRows["termdata"] .= HTMLcopyTerm($data->result->term);
@@ -226,25 +218,25 @@ function data2htmlTerm($data, $param = array()){
 	/*Narrower*/
 	$dataTE = getURLdata($URL_BASE . '?task=fetchDown&arg=' . $term_id);
 	if ($dataTE->resume->cant_result > 0) {
-		$arrayRows["NT"]='<div><span class="label_list">'.ucfirst(TE_terminos).':</span>';				
-		$arrayRows["NT"].='<div id="treeTerm" data-url="'.$CFG_URL_PARAM["url_site"].'common/treedata.php?node='.$term_id.'&amp;v='.$vocab_code.'"></div></div>';		
-		}
+		$arrayRows["NT"] = '<div><span class="label_list">' . ucfirst(TE_terminos) . ':</span>';
+		$arrayRows["NT"] .= '<div id="treeTerm" data-url="' . $CFG_URL_PARAM["url_site"] . 'common/treedata.php?node=' . $term_id . '&amp;v=' . $vocab_code . '"></div></div>';
+	}
 
 	//Fetch data about associated terms (BT,RT,UF)
 	$dataDirectTerms = getURLdata($URL_BASE . '?task=fetchDirectTerms&arg=' . $term_id);
 	$array2HTMLdirectTerms = data2html4directTerms($dataDirectTerms, array("vocab_code" => $vocab_code));
 
 	if ($array2HTMLdirectTerms["UFcant"] > 0) {
-        $arrayRows["UF"]='<div id="alt_terms" class="term_relations"><span class="label_list">'.ucfirst(UP_terminos).':</span><ul class="uf_terms">'.$array2HTMLdirectTerms["UF"].'</ul></div>';
+		$arrayRows["UF"] = '<div id="alt_terms" class="term_relations"><span class="label_list">' . ucfirst(UP_terminos) . ':</span><ul class="uf_terms">' . $array2HTMLdirectTerms["UF"] . '</ul></div>';
 	}
 
 	if ($array2HTMLdirectTerms["RTcant"] > 0) {
-        $arrayRows["RT"]='<div id="related_terms" class="term_relations"><span class="label_list">'.ucfirst(TR_terminos).':</span><ul class="rt_terms">'.$array2HTMLdirectTerms["RT"].'</ul></div>';
+		$arrayRows["RT"] = '<div id="related_terms" class="term_relations"><span class="label_list">' . ucfirst(TR_terminos) . ':</span><ul class="rt_terms">' . $array2HTMLdirectTerms["RT"] . '</ul></div>';
 	}
 
-    if ($array2HTMLdirectTerms["BTcant"] > 0) {
-        $arrayRows["BT"]='<div id="broader_terms" class="term_relations"><span class="label_list">'.ucfirst(TG_terminos).':</span><ul class="bt_terms">'.$array2HTMLdirectTerms["BT"].'</ul></div>';        
-    }
+	if ($array2HTMLdirectTerms["BTcant"] > 0) {
+		$arrayRows["BT"] = '<div id="broader_terms" class="term_relations"><span class="label_list">' . ucfirst(TG_terminos) . ':</span><ul class="bt_terms">' . $array2HTMLdirectTerms["BT"] . '</ul></div>';
+	}
 
 
 	return array("task" => "fetchTerm", "results" => $arrayRows);
@@ -254,13 +246,14 @@ function data2htmlTerm($data, $param = array()){
 
 
 /*HTML details for direct terms*/
-function data2html4directTerms($data, $param = array()){
-	GLOBAL $URL_BASE,$CFG,$CFG_URL_PARAM;
+function data2html4directTerms($data, $param = array())
+{
+	global $URL_BASE, $CFG, $CFG_URL_PARAM;
 
-    $vocab_code=loadVocabularyID(@$param["vocab_code"]);
-	
-    $i = $iRT = $iBT = $iUF = 0;
-    $RT_rows = $BT_rows = $UF_rows = '';
+	$vocab_code = loadVocabularyID(@$param["vocab_code"]);
+
+	$i = $iRT = $iBT = $iUF = 0;
+	$RT_rows = $BT_rows = $UF_rows = '';
 
 	if ($data->resume->cant_result > "0") {
 		foreach ($data->result->term as $value) :
@@ -268,120 +261,124 @@ function data2html4directTerms($data, $param = array()){
 			$term_id = (int)$value->term_id;
 			$term_string = (string)$value->string;
 
-			$class_dd=($value->isMetaTerm==1) ? 'metaTerm ' :'';
+			$class_dd = ($value->isMetaTerm == 1) ? 'metaTerm ' : '';
 
 			switch ((int)$value->relation_type_id) {
 				case '2':
-                    $RT_rows.='<li class="rt_term post-tags '.$class_dd.'" id="rt'.$value->term_id.'" about="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" typeof="skos:Concept">';
-                    $RT_rows.=($value->code) ? '<span property="skos:notation">'.$value->code.'</span>' :'';
-                    $RT_rows.=' <a rel="tag" href="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" title="'.$term_string.'">'.$term_string.'</a>'.HTMLcopyTerm($value, $param = array()).'</li>';				
+					$RT_rows .= '<li class="rt_term post-tags ' . $class_dd . '" id="rt' . $value->term_id . '" about="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" typeof="skos:Concept">';
+					$RT_rows .= ($value->code) ? '<span property="skos:notation">' . $value->code . '</span>' : '';
+					$RT_rows .= ' <a rel="tag" href="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" title="' . $term_string . '">' . $term_string . '</a>' . HTMLcopyTerm($value, $param = array()) . '</li>';
 					break;
 
 				case '3':
 					$iBT = ++$iBT;
-                    $BT_rows.=' <li class="'.$class_dd.' bt_term post-tags" id="bt'.$value->term_id.'" about="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" typeof="skos:Concept"><a rel="tag" href="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" title="'.$term_string.'">'.$term_string.'</a>'.HTMLcopyTerm($value, $param = array()).'</li>';
+					$BT_rows .= ' <li class="' . $class_dd . ' bt_term post-tags" id="bt' . $value->term_id . '" about="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" typeof="skos:Concept"><a rel="tag" href="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" title="' . $term_string . '">' . $term_string . '</a>' . HTMLcopyTerm($value, $param = array()) . '</li>';
 					break;
 
 				case '4':
-                    if ($value->relation_code !='H') {
-                        $iUF=++$iUF;
-                        $UF_rows.=' <li class="uf_term alt-tags" typeof="skos:altLabel" property="skos:altLabel" content="'.$term_string.'" xml:lang="'.(string) $value->lang.'">'.$term_string.'</li>';
-                    }
+					if ($value->relation_code != 'H') {
+						$iUF = ++$iUF;
+						$UF_rows .= ' <li class="uf_term alt-tags" typeof="skos:altLabel" property="skos:altLabel" content="' . $term_string . '" xml:lang="' . (string) $value->lang . '">' . $term_string . '</li>';
+					}
 					break;
 			}
 		endforeach;
 	}
 
-	return array("RT" => $RT_rows,
+	return array(
+		"RT" => $RT_rows,
 		"BT" => $BT_rows,
 		"UF" => $UF_rows,
 		"RTcant" => $iRT,
 		"BTcant" => $iBT,
-		"UFcant" => $iUF);
+		"UFcant" => $iUF
+	);
 }
 
-function data2html4Breadcrumb($data,$the_term=array(),$param=array()){
+function data2html4Breadcrumb($data, $the_term = array(), $param = array())
+{
 
-    GLOBAL $URL_BASE, $CFG_URL_PARAM;
+	global $URL_BASE, $CFG_URL_PARAM;
 
-    $vocab_code=loadVocabularyID(@$param["vocab_code"]);
-    
-    if ($data->resume->cant_result > 0){
+	$vocab_code = loadVocabularyID(@$param["vocab_code"]);
 
-        $rows.='<div id="term_breadcrumb">';                    
-        $rows.='<span typeof="v:Breadcrumb">';
-        $rows.='<a rel="v:url" property="v:title" href="'.$CFG_URL_PARAM["url_site"].'index.php?v='.$vocab_code.'" title="'.MENU_Inicio.'">'.MENU_Inicio.'</a>';
-        $rows.='</span>  ';
+	if ($data->resume->cant_result > 0) {
 
-        $i=0;
+		$rows .= '<div id="term_breadcrumb">';
+		$rows .= '<span typeof="v:Breadcrumb">';
+		$rows .= '<a rel="v:url" property="v:title" href="' . $CFG_URL_PARAM["url_site"] . 'index.php?v=' . $vocab_code . '" title="' . MENU_Inicio . '">' . MENU_Inicio . '</a>';
+		$rows .= '</span>  ';
 
-        foreach ($data->result->term as $value):
-            $i=++$i;
-            if((int) $value->term_id!==$the_term["term_id"])
-            {
-                $rows.='› <span typeof="v:Breadcrumb">';
-                $rows.='<a rel="v:url" property="v:title" href="'.redactHREF($vocab_code,"fetchTerm",$value->term_id).'" title="'.(string) $value->string.'">'.(string) $value->string.'</a>';
-                $rows.='</span>  ';
-            } else {                
-                $rows.='› <span typeof="v:Breadcrumb">';
-                $rows.=(string) $value->string;
-                $rows.='</span>  ';
-            }
-        endforeach;
+		$i = 0;
 
-        $rows.='</div>';        
-    }        else        {
-        //there are only one result
+		foreach ($data->result->term as $value) :
+			$i = ++$i;
+			if ((int) $value->term_id !== $the_term["term_id"]) {
+				$rows .= '› <span typeof="v:Breadcrumb">';
+				$rows .= '<a rel="v:url" property="v:title" href="' . redactHREF($vocab_code, "fetchTerm", $value->term_id) . '" title="' . (string) $value->string . '">' . (string) $value->string . '</a>';
+				$rows .= '</span>  ';
+			} else {
+				$rows .= '› <span typeof="v:Breadcrumb">';
+				$rows .= (string) $value->string;
+				$rows .= '</span>  ';
+			}
+		endforeach;
 
-        $rows.='<div id="term_breadcrumb">';                    
-        $rows.='<span typeof="v:Breadcrumb">';
-        $rows.='<a rel="v:url" property="v:title" href="'.$CFG_URL_PARAM["url_site"].'index.php?v='.$vocab_code.'" title="'.MENU_Inicio.'">'.MENU_Inicio.'</a>';
-        $rows.='</span>  ';
+		$rows .= '</div>';
+	} else {
+		//there are only one result
 
-        $rows.='› <span typeof="v:Breadcrumb">';
-        $rows.=(string) $the_term["term"];
-        $rows.='</span>  ';
+		$rows .= '<div id="term_breadcrumb">';
+		$rows .= '<span typeof="v:Breadcrumb">';
+		$rows .= '<a rel="v:url" property="v:title" href="' . $CFG_URL_PARAM["url_site"] . 'index.php?v=' . $vocab_code . '" title="' . MENU_Inicio . '">' . MENU_Inicio . '</a>';
+		$rows .= '</span>  ';
 
-        $rows.='</div>';
-        }
+		$rows .= '› <span typeof="v:Breadcrumb">';
+		$rows .= (string) $the_term["term"];
+		$rows .= '</span>  ';
 
-return $rows;
+		$rows .= '</div>';
+	}
+
+	return $rows;
 }
 
 
 //lista alfabética
-function HTMLalphaNav($arrayLetras=array(),$param=array(),$select_letra=""){
-    GLOBAL $URL_BASE;
+function HTMLalphaNav($arrayLetras = array(), $param = array(), $select_letra = "")
+{
+	global $URL_BASE;
 
-    $vocab_code=loadVocabularyID(@$param["vocab_code"]);
-    $rows='    <ul class="nav nav-alpha nav-pills">';
-    foreach ($arrayLetras as $letra) :
-        $class=($select_letra==$letra) ? 'active' : '';
-        $rows.='    <li class="'.$class.'">
-                        <a href="'.redactHREF($vocab_code,"letter",strtoupper($letra)).'">
-                            '.strtoupper($letra).'
+	$vocab_code = loadVocabularyID(@$param["vocab_code"]);
+	$rows = '    <ul class="nav nav-alpha nav-pills">';
+	foreach ($arrayLetras as $letra) :
+		$class = ($select_letra == $letra) ? 'active' : '';
+		$rows .= '    <li class="' . $class . '">
+                        <a href="' . redactHREF($vocab_code, "letter", strtoupper($letra)) . '">
+                            ' . strtoupper($letra) . '
                         </a>
                     </li>';
-    endforeach;
-    $rows.='    </ul>';
-    return $rows;
+	endforeach;
+	$rows .= '    </ul>';
+	return $rows;
 }
 
 
 //div to copy term
-function HTMLcopyTerm($term, $param = array()) {
+function HTMLcopyTerm($term, $param = array())
+{
 	global $CFG;
 	$_PARAMS = $_SESSION['_PARAMS'];
 
 	if (count($_PARAMS) < 2) return;
 	if ($term->isMetaTerm == 1) return;
 
-	switch($CFG["WRITES_BACK"]) {
-		case "code" :
+	switch ($CFG["WRITES_BACK"]) {
+		case "code":
 			$string = htmlspecialchars($term->code);
 			break;
 		case "code+label":
-			$string = htmlspecialchars($term->code." ".$term->string);
+			$string = htmlspecialchars($term->code . " " . $term->string);
 			break;
 		case "label":
 		default:
@@ -433,10 +430,13 @@ function fetchVocabularyMetadata($url)
 
 // string 2 URL legible
 // based on source from http://code.google.com/p/pan-fr/
-function string2url($string){
-	$string = strtr($string,
+function string2url($string)
+{
+	$string = strtr(
+		$string,
 		"�������������������������������������������������������",
-		"AAAAAAaaaaaaCcOOOOOOooooooEEEEeeeeIIIIiiiiUUUUuuuuYYyyNn");
+		"AAAAAAaaaaaaCcOOOOOOooooooEEEEeeeeIIIIiiiiUUUUuuuuYYyyNn"
+	);
 
 	$string = str_replace('�', 'AE', $string);
 	$string = str_replace('�', 'ae', $string);
@@ -454,7 +454,8 @@ function string2url($string){
 
 
 //form http://www.compuglobalhipermega.net/php/php-url-semantica/	
-function is_utf($t){
+function is_utf($t)
+{
 	if (@preg_match('/.+/u', $t))
 		return 1;
 }
@@ -462,17 +463,18 @@ function is_utf($t){
 
 /* Banco de vocabularios 2013 */
 // XML Entity Mandatory Escape Characters or CDATA
-function xmlentities($string, $pcdata = FALSE){
+function xmlentities($string, $pcdata = FALSE)
+{
 	if ($pcdata == TRUE) {
 		return '<![CDATA[ ' . str_replace(array('[[', ']]'), array('', ''), $string) . ' ]]>';
 	} else {
 		return str_replace(array('&', '"', "'", '<', '>', '[[', ']]'), array('&amp;', '&quot;', '&apos;', '&lt;', '&gt;', '', ''), $string);
 	}
-
 }
 
 
-function fixEncoding($input, $output_encoding = "UTF-8"){
+function fixEncoding($input, $output_encoding = "UTF-8")
+{
 	return $input;
 	// For some reason this is missing in the php4 in NMT
 	$encoding = mb_detect_encoding($input);
@@ -573,8 +575,8 @@ function clean($val)
 	}
 
 	// now the only remaining whitespace attacks are \t, \n, and \r
-	$ra1 = Array('javascript', 'vbscript', 'expression', 'applet', 'meta', 'xml', 'blink', 'link', 'style', 'script', 'embed', 'object', 'iframe', 'frame', 'frameset', 'ilayer', 'layer', 'bgsound', 'title', 'base');
-	$ra2 = Array('onabort', 'onactivate', 'onafterprint', 'onafterupdate', 'onbeforeactivate', 'onbeforecopy', 'onbeforecut', 'onbeforedeactivate', 'onbeforeeditfocus', 'onbeforepaste', 'onbeforeprint', 'onbeforeunload', 'onbeforeupdate', 'onblur', 'onbounce', 'oncellchange', 'onchange', 'onclick', 'oncontextmenu', 'oncontrolselect', 'oncopy', 'oncut', 'ondataavailable', 'ondatasetchanged', 'ondatasetcomplete', 'ondblclick', 'ondeactivate', 'ondrag', 'ondragend', 'ondragenter', 'ondragleave', 'ondragover', 'ondragstart', 'ondrop', 'onerror', 'onerrorupdate', 'onfilterchange', 'onfinish', 'onfocus', 'onfocusin', 'onfocusout', 'onhelp', 'onkeydown', 'onkeypress', 'onkeyup', 'onlayoutcomplete', 'onload', 'onlosecapture', 'onmousedown', 'onmouseenter', 'onmouseleave', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'onmousewheel', 'onmove', 'onmoveend', 'onmovestart', 'onpaste', 'onpropertychange', 'onreadystatechange', 'onreset', 'onresize', 'onresizeend', 'onresizestart', 'onrowenter', 'onrowexit', 'onrowsdelete', 'onrowsinserted', 'onscroll', 'onselect', 'onselectionchange', 'onselectstart', 'onstart', 'onstop', 'onsubmit', 'onunload');
+	$ra1 = array('javascript', 'vbscript', 'expression', 'applet', 'meta', 'xml', 'blink', 'link', 'style', 'script', 'embed', 'object', 'iframe', 'frame', 'frameset', 'ilayer', 'layer', 'bgsound', 'title', 'base');
+	$ra2 = array('onabort', 'onactivate', 'onafterprint', 'onafterupdate', 'onbeforeactivate', 'onbeforecopy', 'onbeforecut', 'onbeforedeactivate', 'onbeforeeditfocus', 'onbeforepaste', 'onbeforeprint', 'onbeforeunload', 'onbeforeupdate', 'onblur', 'onbounce', 'oncellchange', 'onchange', 'onclick', 'oncontextmenu', 'oncontrolselect', 'oncopy', 'oncut', 'ondataavailable', 'ondatasetchanged', 'ondatasetcomplete', 'ondblclick', 'ondeactivate', 'ondrag', 'ondragend', 'ondragenter', 'ondragleave', 'ondragover', 'ondragstart', 'ondrop', 'onerror', 'onerrorupdate', 'onfilterchange', 'onfinish', 'onfocus', 'onfocusin', 'onfocusout', 'onhelp', 'onkeydown', 'onkeypress', 'onkeyup', 'onlayoutcomplete', 'onload', 'onlosecapture', 'onmousedown', 'onmouseenter', 'onmouseleave', 'onmousemove', 'onmouseout', 'onmouseover', 'onmouseup', 'onmousewheel', 'onmove', 'onmoveend', 'onmovestart', 'onpaste', 'onpropertychange', 'onreadystatechange', 'onreset', 'onresize', 'onresizeend', 'onresizestart', 'onrowenter', 'onrowexit', 'onrowsdelete', 'onrowsinserted', 'onscroll', 'onselect', 'onselectionchange', 'onselectstart', 'onstart', 'onstop', 'onsubmit', 'onunload');
 	$ra = array_merge($ra1, $ra2);
 
 	$found = true; // keep replacing as long as the previous round replaced something
@@ -617,7 +619,8 @@ function XSSprevent($string)
 #
 # Arma un array con una fecha
 #
-function do_date($time){
+function do_date($time)
+{
 	$array = array(
 		min => date("i", strtotime($time)),
 		hora => date("G", strtotime($time)),
@@ -629,8 +632,9 @@ function do_date($time){
 }
 
 
-function loadVocabularyID($ALIAS){
-	GLOBAL $CFG_VOCABS;
+function loadVocabularyID($ALIAS)
+{
+	global $CFG_VOCABS;
 
 	foreach ($CFG_VOCABS as $k => $v) :
 		if ($ALIAS == $v["ALIAS"]) return $k;
@@ -640,15 +644,16 @@ function loadVocabularyID($ALIAS){
 }
 
 
-function redactHREF($v,$task,$arg,$extra=array()){
+function redactHREF($v, $task, $arg, $extra = array())
+{
 
-    GLOBAL $CFG_VOCABS,$CFG,$CFG_URL_PARAM;
+	global $CFG_VOCABS, $CFG, $CFG_URL_PARAM;
 
-    $v=(is_array($CFG_VOCABS[$v])) ? $v : $CFG["DEFVOCAB"];
+	$v = (is_array($CFG_VOCABS[$v])) ? $v : $CFG["DEFVOCAB"];
 
-    $task=(in_array($task,array('fetchTerm','search','letter','last'))) ? $task : 'last' ;
+	$task = (in_array($task, array('fetchTerm', 'search', 'letter', 'last'))) ? $task : 'last';
 
-    return $CFG_URL_PARAM["url_site"].$CFG_URL_PARAM["v"].$v.$CFG_URL_PARAM[$task].$arg;
+	return $CFG_URL_PARAM["url_site"] . $CFG_URL_PARAM["v"] . $v . $CFG_URL_PARAM[$task] . $arg;
 }
 
 
@@ -658,61 +663,65 @@ function redactHREF($v,$task,$arg,$extra=array()){
  * - default value
  * - available value
  * */
-function configValue($value,$default=false,$defaultValues=array()){
+function configValue($value, $default = false, $defaultValues = array())
+{
 
-    if(strlen($value)<1) return $default;
+	if (strlen($value) < 1) return $default;
 
-    //si es que ser uno de una lista de valores
-    if(count($defaultValues)>0){
-        if(!in_array($value,$defaultValues)) return $default;        
-    }
+	//si es que ser uno de una lista de valores
+	if (count($defaultValues) > 0) {
+		if (!in_array($value, $defaultValues)) return $default;
+	}
 
-    return $value;
-
+	return $value;
 }
 
 /* Retorna los datos, acorde al formato de autocompleter */
-function getData4Autocompleter($URL_BASE,$searchq){
+function getData4Autocompleter($URL_BASE, $searchq)
+{
 
-        $data=getURLdata($URL_BASE.'?task=suggestDetails&arg='.$searchq);       
-        $arrayResponse=array("query"=>$searchq,
-                             "suggestions"=>array(),
-                             "data"=>array());
-        if($data->resume->cant_result > 0)  {   
-            foreach ($data->result->term as $value) :
-                $i=++$i;
-                array_push($arrayResponse["suggestions"], (string) $value->string);
-                array_push($arrayResponse["data"], (int) $value->term_id);
-            endforeach;
-        }                   
-        return json_encode($arrayResponse);
-    };
+	$data = getURLdata($URL_BASE . '?task=suggestDetails&arg=' . $searchq);
+	$arrayResponse = array(
+		"query" => $searchq,
+		"suggestions" => array(),
+		"data" => array()
+	);
+	if ($data->resume->cant_result > 0) {
+		foreach ($data->result->term as $value) :
+			$i = ++$i;
+			array_push($arrayResponse["suggestions"], (string) $value->string);
+			array_push($arrayResponse["data"], (int) $value->term_id);
+		endforeach;
+	}
+	return json_encode($arrayResponse);
+};
 
 
 /* Retorna los datos, acorde al formato de autocompleter UI*/
-function getData4AutocompleterUI($URL_BASE,$searchq){
+function getData4AutocompleterUI($URL_BASE, $searchq)
+{
 
-        $data=getURLdata($URL_BASE.'?task=suggestDetails&arg='.$searchq);       
-        $arrayResponse=array();
-        if($data->resume->cant_result > 0)  {   
-            foreach ($data->result->term as $value) :
-                $i=++$i;
-                array_push($arrayResponse, (string) $value->string);
-            endforeach;
-        }                   
-        return json_encode($arrayResponse);
+	$data = getURLdata($URL_BASE . '?task=suggestDetails&arg=' . $searchq);
+	$arrayResponse = array();
+	if ($data->resume->cant_result > 0) {
+		foreach ($data->result->term as $value) :
+			$i = ++$i;
+			array_push($arrayResponse, (string) $value->string);
+		endforeach;
+	}
+	return json_encode($arrayResponse);
 };
 
 
 
-function retriveInternalReferer($URL_SERVER,$params=array()){	
-		$task=(@$params["task"]) ? $params["task"] : '';
-		$arg=(@$params["arg"]) ? $params["arg"] : '';
-		
-		if(!in_array(array("letter","fefetchTerm"),$arg)) return $URL_SERVER.'?';
-		
-		$add_param='?task='.$task.'&arg='.$arg.'&';
+function retriveInternalReferer($URL_SERVER, $params = array())
+{
+	$task = (@$params["task"]) ? $params["task"] : '';
+	$arg = (@$params["arg"]) ? $params["arg"] : '';
 
-	return $URL_SERVER.$add_param;
+	if (!in_array(array("letter", "fefetchTerm"), $arg)) return $URL_SERVER . '?';
+
+	$add_param = '?task=' . $task . '&arg=' . $arg . '&';
+
+	return $URL_SERVER . $add_param;
 }
-?>
